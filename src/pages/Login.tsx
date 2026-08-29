@@ -74,6 +74,10 @@ export function Login() {
         </button>
       </form>
 
+      <p className="form-footer">
+        <Link to="/forgot-password">Forgot password?</Link>
+      </p>
+
       <div className="divider">or</div>
       <GoogleSignInButton onCredential={handleGoogleCredential} />
 

@@ -15,6 +15,7 @@ interface AuthContextValue {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, displayName?: string) => Promise<void>;
   signInWithGoogle: (idToken: string) => Promise<void>;
+  resetPassword: (token: string, password: string) => Promise<void>;
   signOut: () => void;
 }
 
@@ -99,9 +100,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [applyAuth],
   );
 
+  const resetPassword = useCallback(
+    async (token: string, password: string) => {
+      const res = await authApi.resetPassword(token, password);
+      applyAuth(res);
+    },
+    [applyAuth],
+  );
+
   const value = useMemo<AuthContextValue>(
-    () => ({ token, user, accountId, loading, signIn, signUp, signInWithGoogle, signOut }),
-    [token, user, accountId, loading, signIn, signUp, signInWithGoogle, signOut],
+    () => ({ token, user, accountId, loading, signIn, signUp, signInWithGoogle, resetPassword, signOut }),
+    [token, user, accountId, loading, signIn, signUp, signInWithGoogle, resetPassword, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
