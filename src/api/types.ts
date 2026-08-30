@@ -25,7 +25,9 @@ export interface MeResponse {
   tier: ServerTier;
 }
 
-export type ItemStatus = 'available' | 'sold';
+/** 'sold' was retired for 'unavailable' (api migration 000013): the picker
+ * only knows the item is gone, not why. */
+export type ItemStatus = 'available' | 'unavailable';
 
 export interface Entry {
   id: string;

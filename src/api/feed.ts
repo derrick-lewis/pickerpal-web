@@ -11,7 +11,7 @@ export type FeedLens = 'left_behind' | 'showing_off';
 export interface FeedEntry {
   id: string;
   visibility: FeedLens;
-  status: 'available' | 'sold';
+  status: 'available' | 'unavailable';
   priceCents: number | null;
   sellerCode?: string | null;
   categoryId: string | null;

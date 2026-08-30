@@ -72,7 +72,7 @@ export function ItemsList() {
           )}
         </div>
         <div className="filter-group" role="tablist" aria-label="Filter by status">
-          {(['all', 'available', 'sold'] as const).map((value) => (
+          {(['all', 'available', 'unavailable'] as const).map((value) => (
             <button
               key={value}
               type="button"
@@ -81,7 +81,7 @@ export function ItemsList() {
               className={`filter-btn ${filter === value ? 'active' : ''}`}
               onClick={() => setFilter(value)}
             >
-              {value === 'all' ? 'All' : value === 'available' ? 'Available' : 'Sold'}
+              {value === 'all' ? 'All' : value === 'available' ? 'Available' : 'Gone'}
             </button>
           ))}
         </div>
@@ -101,7 +101,7 @@ export function ItemsList() {
             🏺
           </span>
           <p className="empty-title">
-            {filter === 'sold' ? 'Nothing sold yet' : filter === 'available' ? 'Nothing available' : 'No items yet'}
+            {filter === 'unavailable' ? 'Nothing marked gone yet' : filter === 'available' ? 'Nothing available' : 'No items yet'}
           </p>
           <p className="empty-hint">Finds you back up from the app will show here.</p>
         </div>

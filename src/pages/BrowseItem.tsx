@@ -69,7 +69,7 @@ export function BrowseItem() {
   }
 
   const currentPhoto = photos[activePhoto];
-  const sold = item.status === 'sold';
+  const gone = item.status === 'unavailable';
   const whereLine = [item.storeName, [item.storeCity, item.storeState].filter(Boolean).join(', ')]
     .filter(Boolean)
     .join(' — ');
@@ -149,8 +149,8 @@ export function BrowseItem() {
 
           <div className="detail-priceline">
             <span className="detail-price">{formatCents(item.priceCents)}</span>
-            <span className={`status-chip ${sold ? 'status-chip--sold' : 'status-chip--available'}`}>
-              {sold ? 'Sold' : 'Available'}
+            <span className={`status-chip ${gone ? 'status-chip--sold' : 'status-chip--available'}`}>
+              {gone ? 'Gone' : 'Available'}
             </span>
           </div>
 

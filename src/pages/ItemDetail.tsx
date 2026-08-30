@@ -99,7 +99,7 @@ export function ItemDetail() {
   }
 
   const currentPhoto = photos[activePhoto];
-  const sold = item.status === 'sold';
+  const gone = item.status === 'unavailable';
   const previous = item.prices.length > 1 ? item.prices[1] : null;
   const priceDropped =
     previous !== null && item.priceCents !== null && item.priceCents < previous.priceCents;
@@ -185,8 +185,8 @@ export function ItemDetail() {
           <div className="detail-priceline">
             <span className="detail-price">{formatCents(item.priceCents)}</span>
             {priceDropped && <s className="detail-was">{formatCents(previous.priceCents)}</s>}
-            <span className={`status-chip ${sold ? 'status-chip--sold' : 'status-chip--available'}`}>
-              {sold ? 'Sold' : 'Available'}
+            <span className={`status-chip ${gone ? 'status-chip--sold' : 'status-chip--available'}`}>
+              {gone ? 'Gone' : 'Available'}
             </span>
           </div>
 
@@ -208,9 +208,9 @@ export function ItemDetail() {
               <dt>Found</dt>
               <dd>{formatDate(item.createdAt)}</dd>
             </div>
-            {sold && item.soldAt && (
+            {gone && item.soldAt && (
               <div className="fact">
-                <dt>Sold</dt>
+                <dt>Gone since</dt>
                 <dd>{formatDate(item.soldAt)}</dd>
               </div>
             )}

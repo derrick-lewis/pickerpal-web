@@ -5,19 +5,19 @@ import { AuthImage } from './AuthImage';
 
 /**
  * One find in the grid. Image-forward: the photo owns the card, with the
- * status told on the photo itself (a Sold scrim, a photo-count chip) and the
+ * status told on the photo itself (a Gone scrim, a photo-count chip) and the
  * words kept to the three things a picker scans for — maker, where, price.
  * "Unmarked" is the trade's word for a piece with no maker attribution.
  */
 export function ItemCard({ item }: { item: Entry }) {
-  const sold = item.status === 'sold';
+  const gone = item.status === 'unavailable';
   const priceDropped =
     item.previousPriceCents !== null &&
     item.priceCents !== null &&
     item.priceCents < item.previousPriceCents;
 
   return (
-    <Link to={`/items/${item.id}`} className={`item-card ${sold ? 'item-card--sold' : ''}`}>
+    <Link to={`/items/${item.id}`} className={`item-card ${gone ? 'item-card--sold' : ''}`}>
       <div className="item-card-thumb">
         {item.firstPhotoId ? (
           <AuthImage
@@ -36,7 +36,7 @@ export function ItemCard({ item }: { item: Entry }) {
             🕰️
           </span>
         )}
-        {sold && <span className="item-card-scrim">Sold</span>}
+        {gone && <span className="item-card-scrim">Gone</span>}
         {item.photoCount > 1 && (
           <span className="item-card-count" aria-label={`${item.photoCount} photos`}>
             {item.photoCount}

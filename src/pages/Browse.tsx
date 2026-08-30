@@ -212,7 +212,7 @@ function FindCard({ item }: { item: FeedEntry }) {
             🕰️
           </span>
         )}
-        {item.status === 'sold' && <span className="item-card-scrim">Sold</span>}
+        {item.status === 'unavailable' && <span className="item-card-scrim">Gone</span>}
         {item.isMine && (
           <span className="item-card-count" aria-label="Published from your catalog">
             yours
