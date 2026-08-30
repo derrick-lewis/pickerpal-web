@@ -2,7 +2,10 @@
 // cents, epoch-millisecond timestamps, and the `{"error":{code,message,
 // request_id}}` envelope on any non-2xx response.
 
-export const API_URL = (import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:8080';
+// Unset -> the local dev API. Explicitly EMPTY -> same-origin relative URLs,
+// which is how production works (the API serves this bundle itself).
+const rawApiUrl = import.meta.env.VITE_API_URL as string | undefined;
+export const API_URL = rawApiUrl === undefined ? 'http://localhost:8080' : rawApiUrl.replace(/\/+$/, '');
 
 export class ApiError extends Error {
   status: number;
