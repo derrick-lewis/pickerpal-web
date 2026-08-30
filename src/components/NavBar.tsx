@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 
 export function NavBar() {
-  const { token, user, signOut } = useAuth();
+  const { token, user, tier, signOut } = useAuth();
   const navigate = useNavigate();
 
   function handleSignOut() {
@@ -19,10 +19,20 @@ export function NavBar() {
         <div className="nav-actions">
           {token && (
             <Link to="/items" className="nav-link">
-              Items
+              My items
             </Link>
           )}
-          {token && user && <span className="nav-user">{user.email}</span>}
+          {token && (
+            <Link to="/browse" className="nav-link">
+              Finds
+            </Link>
+          )}
+          {token && user && (
+            <span className="nav-user">
+              {user.email}
+              {tier === 'plus' && <span className="nav-tier"> · Plus</span>}
+            </span>
+          )}
           {token ? (
             <button type="button" className="btn-link" onClick={handleSignOut}>
               Sign out

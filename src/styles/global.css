@@ -143,6 +143,13 @@ h1, h2, h3 {
   color: var(--color-muted);
 }
 
+/* The Plus badge next to the signed-in email: the one place the portal
+   states which rung of the ladder you are on. */
+.nav-tier {
+  color: var(--color-link);
+  font-weight: 600;
+}
+
 .nav-actions {
   display: flex;
   align-items: center;
@@ -348,6 +355,45 @@ h1, h2, h3 {
 .filter-btn.active {
   background: var(--color-accent);
   color: var(--color-accent-contrast);
+}
+
+/* Wrapping chip rows on the Finds browse page (shops / category / maker).
+   Distinct from .filter-group, which is a closed segmented control. */
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 0.75rem;
+}
+
+.chip {
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-card-bg);
+  color: var(--color-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: color 120ms ease, border-color 120ms ease, background-color 120ms ease;
+}
+
+.chip:hover {
+  color: var(--color-text);
+}
+
+.chip--active {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.chip-count {
+  font-size: 0.7rem;
+  opacity: 0.75;
 }
 
 .items-grid {

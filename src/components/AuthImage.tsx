@@ -56,6 +56,12 @@ const UPGRADE_SLACK = 40;
 interface AuthImageProps {
   photoId: string;
   /**
+   * Endpoint prefix for the photo bytes. Defaults to the owner surface;
+   * the crowd feed passes '/v1/feed/photos', whose authorization is "is
+   * this item published and its owner subscribed" rather than "is it mine".
+   */
+  basePath?: string;
+  /**
    * 'thumb' and 'file' fetch that rendition eagerly. 'auto' is for images
    * whose ideal resolution depends on layout: it waits until the element
    * nears the viewport, paints the thumbnail immediately, and — when the
@@ -69,7 +75,7 @@ interface AuthImageProps {
   fallback?: ReactNode;
 }
 
-export function AuthImage({ photoId, variant, alt, className, fallback }: AuthImageProps) {
+export function AuthImage({ photoId, variant, alt, className, fallback, basePath = '/v1/photos' }: AuthImageProps) {
   const { token } = useAuth();
   const imgRef = useRef<HTMLImageElement | null>(null);
   const [src, setSrc] = useState<string | null>(null);
@@ -133,14 +139,14 @@ export function AuthImage({ photoId, variant, alt, className, fallback }: AuthIm
     };
 
     const load = (kind: 'thumb' | 'file') => {
-      const key = `${photoId}:${kind}`;
+      const key = `${basePath}/${photoId}:${kind}`;
       const existing = acquire(key);
       if (existing) {
         held.push(key);
         show(existing.url);
         return Promise.resolve(true);
       }
-      return apiFetchBlob(`/v1/photos/${photoId}/${kind}`, token)
+      return apiFetchBlob(`${basePath}/${photoId}/${kind}`, token)
         .then((blob) => {
           if (cancelled) return false;
           const entry = store(key, URL.createObjectURL(blob));
@@ -167,7 +173,7 @@ export function AuthImage({ photoId, variant, alt, className, fallback }: AuthIm
       cancelled = true;
       held.forEach(release);
     };
-  }, [photoId, variant, token, inView]);
+  }, [photoId, variant, token, inView, basePath]);
 
   if (failed && fallback) {
     return <>{fallback}</>;

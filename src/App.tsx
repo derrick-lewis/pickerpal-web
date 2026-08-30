@@ -5,6 +5,8 @@ import { ForgotPassword } from './pages/ForgotPassword';
 import { Home } from './pages/Home';
 import { ItemDetail } from './pages/ItemDetail';
 import { ItemsList } from './pages/ItemsList';
+import { Browse } from './pages/Browse';
+import { BrowseItem } from './pages/BrowseItem';
 import { Login } from './pages/Login';
 import { NotFound } from './pages/NotFound';
 import { ResetPassword } from './pages/ResetPassword';
@@ -36,6 +38,22 @@ export function App() {
             element={
               <ProtectedRoute>
                 <ItemDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/browse"
+            element={
+              <ProtectedRoute requireTier="plus">
+                <Browse />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/browse/:id"
+            element={
+              <ProtectedRoute requireTier="plus">
+                <BrowseItem />
               </ProtectedRoute>
             }
           />

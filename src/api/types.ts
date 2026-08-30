@@ -7,16 +7,22 @@ export interface AuthUser {
   displayName: string | null;
 }
 
+/** The account's rung on the access ladder. Never 'anonymous' on the wire:
+ * holding a session is what account tier means. See src/auth/access.ts. */
+export type ServerTier = 'account' | 'plus';
+
 export interface AuthResponse {
   token: string;
   expiresAt: number;
   user: AuthUser;
   accountId: string;
+  tier: ServerTier;
 }
 
 export interface MeResponse {
   user: AuthUser;
   accountId: string;
+  tier: ServerTier;
 }
 
 export type ItemStatus = 'available' | 'sold';
