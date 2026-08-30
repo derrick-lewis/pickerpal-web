@@ -3,7 +3,7 @@ import { fetchItems } from '../api/items';
 import { ApiError } from '../api/client';
 import type { Entry, ItemStatus } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
-import { ItemCard } from '../components/ItemCard';
+import { ItemCard, ItemCardSkeleton } from '../components/ItemCard';
 
 type StatusFilter = 'all' | ItemStatus;
 
@@ -62,12 +62,22 @@ export function ItemsList() {
   return (
     <div>
       <div className="items-toolbar">
-        <h1>My items</h1>
-        <div className="filter-group">
+        <div className="items-toolbar-heading">
+          <h1>My items</h1>
+          {!loading && (
+            <span className="items-count">
+              {items.length}
+              {nextCursor ? '+' : ''} {items.length === 1 ? 'item' : 'items'}
+            </span>
+          )}
+        </div>
+        <div className="filter-group" role="tablist" aria-label="Filter by status">
           {(['all', 'available', 'sold'] as const).map((value) => (
             <button
               key={value}
               type="button"
+              role="tab"
+              aria-selected={filter === value}
               className={`filter-btn ${filter === value ? 'active' : ''}`}
               onClick={() => setFilter(value)}
             >
@@ -80,9 +90,21 @@ export function ItemsList() {
       {error && <p className="error-banner">{error}</p>}
 
       {loading ? (
-        <p className="loading-state">Loading items…</p>
+        <div className="items-grid" aria-busy="true">
+          {Array.from({ length: 8 }, (_, i) => (
+            <ItemCardSkeleton key={i} />
+          ))}
+        </div>
       ) : items.length === 0 ? (
-        <p className="empty-state">No items yet.</p>
+        <div className="empty-state">
+          <span className="empty-glyph" aria-hidden="true">
+            🏺
+          </span>
+          <p className="empty-title">
+            {filter === 'sold' ? 'Nothing sold yet' : filter === 'available' ? 'Nothing available' : 'No items yet'}
+          </p>
+          <p className="empty-hint">Finds you back up from the app will show here.</p>
+        </div>
       ) : (
         <>
           <div className="items-grid">

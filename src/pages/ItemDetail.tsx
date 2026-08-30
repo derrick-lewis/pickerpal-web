@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { fetchItem } from '../api/items';
 import { ApiError } from '../api/client';
@@ -12,6 +12,7 @@ export function ItemDetail() {
   const { token } = useAuth();
   const [item, setItem] = useState<ItemDetailType | null>(null);
   const [activePhoto, setActivePhoto] = useState(0);
+  const [lightbox, setLightbox] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -36,8 +37,43 @@ export function ItemDetail() {
       .finally(() => setLoading(false));
   }, [token, id]);
 
+  const photos = item?.photos ?? [];
+  const stepPhoto = useCallback(
+    (step: 1 | -1) => {
+      if (photos.length < 2) return;
+      setActivePhoto((i) => (i + step + photos.length) % photos.length);
+    },
+    [photos.length],
+  );
+
+  // Arrow keys page the gallery; Escape leaves the lightbox. Attached at the
+  // document so it works without the gallery holding focus.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'ArrowRight') stepPhoto(1);
+      else if (e.key === 'ArrowLeft') stepPhoto(-1);
+      else if (e.key === 'Escape') setLightbox(false);
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [stepPhoto]);
+
   if (loading) {
-    return <p className="loading-state">Loading…</p>;
+    return (
+      <div>
+        <Link to="/items" className="back-link">
+          &larr; Back to items
+        </Link>
+        <div className="detail-layout" aria-busy="true">
+          <div className="gallery-main shimmer" />
+          <div>
+            <div className="skeleton-line shimmer" style={{ width: '55%', height: '1.6rem' }} />
+            <div className="skeleton-line shimmer" style={{ width: '35%' }} />
+            <div className="skeleton-line shimmer" style={{ width: '25%', height: '1.4rem' }} />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (notFound) {
@@ -62,8 +98,11 @@ export function ItemDetail() {
     );
   }
 
-  const photos = item.photos ?? [];
   const currentPhoto = photos[activePhoto];
+  const sold = item.status === 'sold';
+  const previous = item.prices.length > 1 ? item.prices[1] : null;
+  const priceDropped =
+    previous !== null && item.priceCents !== null && item.priceCents < previous.priceCents;
 
   return (
     <div>
@@ -72,22 +111,58 @@ export function ItemDetail() {
       </Link>
 
       <div className="detail-layout">
-        <div>
+        <div className="gallery">
           <div className="gallery-main">
             {currentPhoto ? (
-              <AuthImage photoId={currentPhoto.id} variant="file" alt={item.categoryName ?? 'Item photo'} />
+              <button
+                type="button"
+                className="gallery-zoom"
+                onClick={() => setLightbox(true)}
+                aria-label="View full screen"
+              >
+                <AuthImage
+                  photoId={currentPhoto.id}
+                  variant="file"
+                  alt={item.makerName ?? item.categoryName ?? 'Item photo'}
+                />
+              </button>
             ) : (
               <span className="placeholder" aria-hidden="true">
                 🕰️
               </span>
             )}
+            {photos.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  className="gallery-arrow gallery-arrow--prev"
+                  onClick={() => stepPhoto(-1)}
+                  aria-label="Previous photo"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  className="gallery-arrow gallery-arrow--next"
+                  onClick={() => stepPhoto(1)}
+                  aria-label="Next photo"
+                >
+                  ›
+                </button>
+                <span className="gallery-counter">
+                  {activePhoto + 1} / {photos.length}
+                </span>
+              </>
+            )}
           </div>
           {photos.length > 1 && (
-            <div className="gallery-strip">
+            <div className="gallery-strip" role="tablist" aria-label="Photos">
               {photos.map((photo, i) => (
                 <button
                   key={photo.id}
                   type="button"
+                  role="tab"
+                  aria-selected={i === activePhoto}
                   className={i === activePhoto ? 'active' : ''}
                   onClick={() => setActivePhoto(i)}
                 >
@@ -98,68 +173,120 @@ export function ItemDetail() {
           )}
         </div>
 
-        <div>
+        <div className="detail-info">
+          <div className="detail-eyebrow">
+            {[item.categoryName, item.subcategoryName].filter(Boolean).join(' · ') || 'Item'}
+          </div>
           <h1 className="detail-heading">
-            {item.makerName ?? item.categoryName ?? 'Unknown item'}
-            {item.makerUncertain && item.makerName && <span className="detail-uncertain">?</span>}
+            {item.makerName ?? 'Unmarked'}
+            {item.makerUncertain && item.makerName && <span className="uncertain">?</span>}
           </h1>
-          {(item.categoryName || item.subcategoryName) && (
-            <p className="detail-cats">
-              {[item.categoryName, item.subcategoryName].filter(Boolean).join(' · ')}
-            </p>
-          )}
 
           <div className="detail-priceline">
             <span className="detail-price">{formatCents(item.priceCents)}</span>
-            <span className={`badge ${item.status === 'sold' ? 'badge-sold' : 'badge-available'}`}>
-              {item.status}
+            {priceDropped && <s className="detail-was">{formatCents(previous.priceCents)}</s>}
+            <span className={`status-chip ${sold ? 'status-chip--sold' : 'status-chip--available'}`}>
+              {sold ? 'Sold' : 'Available'}
             </span>
           </div>
 
-          <div className="detail-card">
-            <div className="label">Store</div>
-            <div>{item.storeName ?? '—'}</div>
-          </div>
-
-          {(item.boothLabel || item.sellerCode) && (
-            <div className="detail-card">
-              <div className="label">Booth</div>
-              <div>
-                {item.boothLabel ?? '—'}
-                {item.sellerCode ? ` · seller code ${item.sellerCode}` : ''}
+          <dl className="detail-facts">
+            <div className="fact">
+              <dt>Shop</dt>
+              <dd>{item.storeName ?? '—'}</dd>
+            </div>
+            {(item.boothLabel || item.sellerCode) && (
+              <div className="fact">
+                <dt>Booth</dt>
+                <dd>
+                  {item.boothLabel ?? '—'}
+                  {item.sellerCode ? ` · code ${item.sellerCode}` : ''}
+                </dd>
               </div>
+            )}
+            <div className="fact">
+              <dt>Found</dt>
+              <dd>{formatDate(item.createdAt)}</dd>
             </div>
-          )}
-
-          {item.status === 'sold' && item.soldAt && (
-            <div className="detail-card">
-              <div className="label">Sold</div>
-              <div>{formatDate(item.soldAt)}</div>
-            </div>
-          )}
+            {sold && item.soldAt && (
+              <div className="fact">
+                <dt>Sold</dt>
+                <dd>{formatDate(item.soldAt)}</dd>
+              </div>
+            )}
+          </dl>
 
           {item.notes && (
-            <div className="detail-card">
+            <div className="detail-notes-card">
               <div className="label">Notes</div>
               <div className="detail-notes">{item.notes}</div>
             </div>
           )}
 
-          {item.prices.length > 0 && (
-            <div className="detail-card">
+          {item.prices.length > 1 && (
+            <div className="detail-notes-card">
               <div className="label">Price history</div>
               <ul className="price-history">
-                {item.prices.map((p) => (
-                  <li key={p.id}>
-                    <span>{formatDate(p.recordedAt)}</span>
-                    <span>{formatCents(p.priceCents)}</span>
-                  </li>
-                ))}
+                {item.prices.map((p, i) => {
+                  const older = item.prices[i + 1];
+                  const dir = older ? Math.sign(p.priceCents - older.priceCents) : 0;
+                  return (
+                    <li key={p.id}>
+                      <span>{formatDate(p.recordedAt)}</span>
+                      <span className={dir < 0 ? 'price-down' : dir > 0 ? 'price-up' : ''}>
+                        {dir < 0 ? '↓ ' : dir > 0 ? '↑ ' : ''}
+                        {formatCents(p.priceCents)}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}
         </div>
       </div>
+
+      {lightbox && currentPhoto && (
+        <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setLightbox(false)}>
+          <AuthImage
+            photoId={currentPhoto.id}
+            variant="file"
+            alt={item.makerName ?? item.categoryName ?? 'Item photo'}
+          />
+          {photos.length > 1 && (
+            <>
+              <button
+                type="button"
+                className="gallery-arrow gallery-arrow--prev"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  stepPhoto(-1);
+                }}
+                aria-label="Previous photo"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                className="gallery-arrow gallery-arrow--next"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  stepPhoto(1);
+                }}
+                aria-label="Next photo"
+              >
+                ›
+              </button>
+              <span className="gallery-counter">
+                {activePhoto + 1} / {photos.length}
+              </span>
+            </>
+          )}
+          <button type="button" className="lightbox-close" aria-label="Close">
+            ×
+          </button>
+        </div>
+      )}
     </div>
   );
 }
