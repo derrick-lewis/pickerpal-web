@@ -918,10 +918,33 @@ h1, h2, h3 {
   }
 }
 
+/* The transformed layer: full-viewport with origin 0,0 so viewport
+   coordinates are canvas coordinates and cursor-anchored zoom is one line. */
+.lightbox-canvas {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: 0 0;
+  touch-action: none;
+  cursor: zoom-in;
+}
+
+.lightbox-canvas--zoomed {
+  cursor: grab;
+}
+
+.lightbox-canvas--zoomed:active {
+  cursor: grabbing;
+}
+
 .lightbox img {
   max-width: min(96vw, 1400px);
   max-height: 94vh;
   object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .lightbox-close {

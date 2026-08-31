@@ -4,6 +4,7 @@ import { ApiError } from '../api/client';
 import { fetchFeedItem, type FeedDetail } from '../api/feed';
 import { useAuth } from '../auth/AuthContext';
 import { AuthImage } from '../components/AuthImage';
+import { Lightbox } from '../components/Lightbox';
 import { formatCents, formatDate } from '../lib/format';
 
 /**
@@ -17,6 +18,7 @@ export function BrowseItem() {
   const { token } = useAuth();
   const [item, setItem] = useState<FeedDetail | null>(null);
   const [activePhoto, setActivePhoto] = useState(0);
+  const [lightbox, setLightbox] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -49,6 +51,16 @@ export function BrowseItem() {
     },
     [photos.length],
   );
+
+  // Arrow keys page the gallery; Escape belongs to the Lightbox.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'ArrowRight') stepPhoto(1);
+      else if (e.key === 'ArrowLeft') stepPhoto(-1);
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [stepPhoto]);
 
   if (loading) {
     return <p className="loading-state">Loading…</p>;
@@ -84,12 +96,19 @@ export function BrowseItem() {
         <div className="gallery">
           <div className="gallery-main">
             {currentPhoto ? (
-              <AuthImage
-                photoId={currentPhoto.id}
-                basePath="/v1/feed/photos"
-                variant={currentPhoto.hasFile ? 'file' : 'thumb'}
-                alt={item.makerName ?? item.categoryName ?? 'Find photo'}
-              />
+              <button
+                type="button"
+                className="gallery-zoom"
+                onClick={() => setLightbox(true)}
+                aria-label="View full screen"
+              >
+                <AuthImage
+                  photoId={currentPhoto.id}
+                  basePath="/v1/feed/photos"
+                  variant={currentPhoto.hasFile ? 'file' : 'thumb'}
+                  alt={item.makerName ?? item.categoryName ?? 'Find photo'}
+                />
+              </button>
             ) : (
               <span className="placeholder" aria-hidden="true">
                 🕰️
@@ -187,6 +206,17 @@ export function BrowseItem() {
           )}
         </div>
       </div>
+
+      {lightbox && currentPhoto && (
+        <Lightbox
+          photoId={currentPhoto.id}
+          basePath="/v1/feed/photos"
+          alt={item.makerName ?? item.categoryName ?? 'Find photo'}
+          onClose={() => setLightbox(false)}
+          onStep={photos.length > 1 ? stepPhoto : undefined}
+          counter={photos.length > 1 ? `${activePhoto + 1} / ${photos.length}` : undefined}
+        />
+      )}
     </div>
   );
 }

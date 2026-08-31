@@ -5,6 +5,7 @@ import { ApiError } from '../api/client';
 import type { ItemDetail as ItemDetailType } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
 import { AuthImage } from '../components/AuthImage';
+import { Lightbox } from '../components/Lightbox';
 import { formatCents, formatDate } from '../lib/format';
 
 export function ItemDetail() {
@@ -50,9 +51,9 @@ export function ItemDetail() {
   // document so it works without the gallery holding focus.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      // Escape belongs to the Lightbox (it resets zoom before closing).
       if (e.key === 'ArrowRight') stepPhoto(1);
       else if (e.key === 'ArrowLeft') stepPhoto(-1);
-      else if (e.key === 'Escape') setLightbox(false);
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
@@ -247,45 +248,13 @@ export function ItemDetail() {
       </div>
 
       {lightbox && currentPhoto && (
-        <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setLightbox(false)}>
-          <AuthImage
-            photoId={currentPhoto.id}
-            variant="file"
-            alt={item.makerName ?? item.categoryName ?? 'Item photo'}
-          />
-          {photos.length > 1 && (
-            <>
-              <button
-                type="button"
-                className="gallery-arrow gallery-arrow--prev"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  stepPhoto(-1);
-                }}
-                aria-label="Previous photo"
-              >
-                ‹
-              </button>
-              <button
-                type="button"
-                className="gallery-arrow gallery-arrow--next"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  stepPhoto(1);
-                }}
-                aria-label="Next photo"
-              >
-                ›
-              </button>
-              <span className="gallery-counter">
-                {activePhoto + 1} / {photos.length}
-              </span>
-            </>
-          )}
-          <button type="button" className="lightbox-close" aria-label="Close">
-            ×
-          </button>
-        </div>
+        <Lightbox
+          photoId={currentPhoto.id}
+          alt={item.makerName ?? item.categoryName ?? 'Item photo'}
+          onClose={() => setLightbox(false)}
+          onStep={photos.length > 1 ? stepPhoto : undefined}
+          counter={photos.length > 1 ? `${activePhoto + 1} / ${photos.length}` : undefined}
+        />
       )}
     </div>
   );
