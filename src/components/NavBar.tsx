@@ -33,11 +33,11 @@ export function NavBar() {
             </Link>
           )}
           {token && user && (
-            <span className="nav-user">
+            <span className="nav-user" title={user.email}>
               {user.email}
-              {tier === 'plus' && <span className="nav-tier"> · Plus</span>}
             </span>
           )}
+          {token && tier === 'plus' && <span className="nav-tier">Plus</span>}
           {token ? (
             <button type="button" className="btn-link" onClick={handleSignOut}>
               Sign out

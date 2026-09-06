@@ -105,19 +105,27 @@ h1, h2, h3 {
   max-width: 28rem;
 }
 
-/* Top nav */
+/* Top nav — mobile-first. On a phone the bar is brand + links + Sign out;
+   the signed-in email (the widest thing in the row by far) only appears at
+   the 720px breakpoint. Sticky so Admin/Sign out stay reachable on long
+   queue pages. */
 
 .nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
 }
 
 .nav-inner {
   max-width: 60rem;
   margin: 0 auto;
-  padding: 0.9rem 1.25rem;
+  padding: 0.45rem 0.85rem;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0 0.25rem;
 }
 
 .nav-brand {
@@ -126,12 +134,19 @@ h1, h2, h3 {
   color: inherit;
   text-decoration: none;
   margin-right: auto;
+  /* Same vertical rhythm as the links so the bar has one height. */
+  padding: 0.5rem 0.4rem 0.5rem 0;
 }
 
+/* Links get real padding so every nav item is a comfortable tap target
+   (~44px tall) instead of a bare line of text. */
 .nav-link {
   color: var(--color-text);
   text-decoration: none;
   font-size: 0.95rem;
+  padding: 0.5rem 0.45rem;
+  border-radius: 6px;
+  white-space: nowrap;
 }
 
 .nav-link:hover {
@@ -139,21 +154,52 @@ h1, h2, h3 {
 }
 
 .nav-user {
+  display: none; /* shown from 720px up — see below */
   font-size: 0.85rem;
   color: var(--color-muted);
+  max-width: 16rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* The Plus badge next to the signed-in email: the one place the portal
-   states which rung of the ladder you are on. */
+/* The Plus badge: the one place the portal states which rung of the
+   ladder you are on. A compact chip so it survives on phones where the
+   email itself does not. */
 .nav-tier {
   color: var(--color-link);
   font-weight: 600;
+  font-size: 0.75rem;
+  border: 1px solid var(--color-link);
+  border-radius: 999px;
+  padding: 0.05rem 0.45rem;
+  white-space: nowrap;
 }
 
 .nav-actions {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.nav-actions .btn-link {
+  padding: 0.5rem 0.45rem;
+  white-space: nowrap;
+}
+
+@media (min-width: 720px) {
+  .nav-inner {
+    padding: 0.45rem 1.25rem;
+  }
+
+  .nav-user {
+    display: inline-block;
+  }
+
+  .nav-actions {
+    gap: 0.6rem;
+  }
 }
 
 /* Buttons & forms */
@@ -411,8 +457,18 @@ h1, h2, h3 {
 
 .items-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1.25rem;
+  /* Phones get a 2-up grid (150px min tracks); wider screens restore the
+     roomier 220px cards below. One-giant-column browsing is the worst of
+     both worlds. */
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+@media (min-width: 720px) {
+  .items-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.25rem;
+  }
 }
 
 /* Cards: the photo owns the card; type stays quiet under it. Hover lifts
