@@ -4,7 +4,15 @@ import { apiRequest } from './client';
 // or flagged pending by the server's automated classifiers, awaiting a
 // human verdict. 403 forbidden for anyone whose session isn't isAdmin.
 
-export type ModerationKind = 'item_photo' | 'item' | 'maker' | 'category' | 'store' | 'share' | 'share_photo';
+export type ModerationKind =
+  | 'item_photo'
+  | 'item'
+  | 'maker'
+  | 'category'
+  | 'store'
+  | 'share'
+  | 'share_photo'
+  | 'account_name';
 
 export type ModerationStatus = 'pending' | 'approved' | 'approved_nsfw' | 'rejected' | 'unclassifiable';
 
@@ -46,6 +54,52 @@ export function submitModerationVerdict(
     method: 'POST',
     token,
     body: { kind, id, verdict },
+  });
+}
+
+// --- Reports (/v1/admin/reports/*) ---
+//
+// A sibling queue to the moderation one above: content the automated pass
+// approved but a picker flagged by hand (stolen listing, spam, etc). Reports
+// are reviewed manually — no auto-hide — so this queue is the only path from
+// "someone reported this" to the item actually coming down.
+
+export type ReportReason = 'inappropriate' | 'spam' | 'stolen_listing' | 'other';
+
+export type ReportResolution = 'dismiss' | 'remove_item';
+
+export interface ReportEntry {
+  id: string;
+  itemId: string;
+  reporterAccountId: string;
+  publisherAccountId: string;
+  reason: ReportReason;
+  note: string | null;
+  snippet: string;
+  /** Set when the item has a lead photo; fetch via AuthImage(basePath: '/v1/admin/moderation/photos', photoId: id). */
+  photoId: string | null;
+  itemModerationStatus: ModerationStatus;
+  createdAt: number;
+}
+
+export interface ReportsQueueResponse {
+  reports: ReportEntry[];
+  openCount: number;
+}
+
+export function fetchReportsQueue(token: string): Promise<ReportsQueueResponse> {
+  return apiRequest<ReportsQueueResponse>('/v1/admin/reports', { token });
+}
+
+export function resolveReport(
+  token: string,
+  reportId: string,
+  action: ReportResolution,
+): Promise<{ ok: boolean }> {
+  return apiRequest<{ ok: boolean }>(`/v1/admin/reports/${reportId}/resolve`, {
+    method: 'POST',
+    token,
+    body: { action },
   });
 }
 

@@ -981,13 +981,78 @@ h1, h2, h3 {
 }
 
 /* Admin moderation */
+/* Mobile-first: base rules target a phone-width admin view (this page is
+   meant to be usable from an "Add to Home Screen" shortcut), and the single
+   min-width breakpoint below restores the wider desktop layout. */
+
+.admin-tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-tab {
+  appearance: none;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.6rem 0.2rem;
+  margin-bottom: -1px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.admin-tab--active {
+  color: var(--color-text);
+  border-bottom-color: var(--color-accent);
+}
+
+@media (min-width: 720px) {
+  .admin-tabs {
+    gap: 1.5rem;
+  }
+
+  .admin-tab {
+    padding: 0.6rem 0.1rem 0.75rem;
+    font-size: 0.95rem;
+  }
+
+  .mod-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .mod-entry {
+    flex-direction: row;
+    gap: 1rem;
+  }
+
+  .mod-entry-thumb,
+  .mod-entry-snippet {
+    width: 84px;
+  }
+
+  .mod-entry-thumb {
+    height: 84px;
+  }
+
+  .mod-entry-snippet {
+    min-height: 84px;
+  }
+}
 
 .mod-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
   margin-bottom: 0.5rem;
 }
 
@@ -998,7 +1063,16 @@ h1, h2, h3 {
 .mod-header-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 1rem;
+  width: 100%;
+  justify-content: space-between;
+}
+
+@media (min-width: 720px) {
+  .mod-header-actions {
+    width: auto;
+  }
 }
 
 .mod-counts {
@@ -1022,7 +1096,8 @@ h1, h2, h3 {
 
 .mod-entry {
   display: flex;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.75rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   padding: 0.9rem 1rem;
@@ -1032,8 +1107,8 @@ h1, h2, h3 {
 
 .mod-entry-thumb {
   flex: none;
-  width: 84px;
-  height: 84px;
+  width: 64px;
+  height: 64px;
   border-radius: 10px;
   overflow: hidden;
   background: var(--color-thumb-bg);
@@ -1056,8 +1131,8 @@ h1, h2, h3 {
 
 .mod-entry-snippet {
   flex: none;
-  width: 84px;
-  min-height: 84px;
+  width: 64px;
+  min-height: 64px;
   border-radius: 10px;
   background: var(--color-card-bg);
   color: var(--color-muted);
@@ -1126,6 +1201,17 @@ h1, h2, h3 {
   border: 1px solid var(--color-border);
 }
 
+.status-chip--removed {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.mod-entry-reporter {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
 .btn-danger {
   background: transparent;
   border-color: var(--color-danger);
@@ -1169,7 +1255,7 @@ h1, h2, h3 {
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
   padding: 1.25rem 1.4rem 1.4rem;
-  width: min(36rem, 100%);
+  width: min(36rem, calc(100vw - 2rem));
   max-height: 90vh;
   overflow-y: auto;
 }

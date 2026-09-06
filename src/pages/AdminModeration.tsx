@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   fetchModerationQueue,
+  fetchReportsQueue,
+  resolveReport,
   submitModerationVerdict,
   type ModerationEntry,
   type ModerationStatus,
   type ModerationVerdict,
+  type ReportEntry,
+  type ReportReason,
+  type ReportResolution,
 } from '../api/admin';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
@@ -20,6 +25,14 @@ const KIND_LABELS: Record<ModerationEntry['kind'], string> = {
   store: 'Store',
   share: 'Share',
   share_photo: 'Share photo',
+  account_name: 'Picker name',
+};
+
+const REASON_LABELS: Record<ReportReason, string> = {
+  inappropriate: 'Inappropriate or offensive',
+  spam: 'Spam or misleading',
+  stolen_listing: 'Stolen or fraudulent listing',
+  other: 'Something else',
 };
 
 // 'unclassifiable' is the server's "the automated pass couldn't classify
@@ -50,16 +63,76 @@ function entryKey(entry: ModerationEntry): string {
   return `${entry.kind}:${entry.id}`;
 }
 
+/** First segment of a UUID — enough to tell two reporters apart in a list
+ * without printing the whole id. */
+function shortId(id: string): string {
+  return id.split('-')[0] ?? id;
+}
+
+type Tab = 'moderation' | 'reports';
+
+/**
+ * Admin page, two queues: automated moderation (this repo's existing
+ * quarantine/pending queue) and picker-submitted reports (a sibling queue —
+ * content the automated pass approved but a person flagged by hand).
+ * ProtectedRoute already proves the visitor is signed in; this page adds its
+ * own isAdmin check on top (rendering "Not authorized" rather than
+ * redirecting, since bouncing a signed-in admin-page visitor elsewhere reads
+ * as a bug) — the server enforces the real boundary regardless.
+ */
+export function AdminModeration() {
+  const { isAdmin } = useAuth();
+  const [tab, setTab] = useState<Tab>('moderation');
+  const [modCount, setModCount] = useState(0);
+  const [openReportsCount, setOpenReportsCount] = useState(0);
+
+  if (!isAdmin) {
+    return (
+      <div className="section">
+        <h2>Not authorized</h2>
+        <p>This page is for PickerPal admins only.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="admin-tabs" role="tablist" aria-label="Admin queues">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'moderation'}
+          className={`admin-tab ${tab === 'moderation' ? 'admin-tab--active' : ''}`}
+          onClick={() => setTab('moderation')}
+        >
+          Moderation ({modCount})
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'reports'}
+          className={`admin-tab ${tab === 'reports' ? 'admin-tab--active' : ''}`}
+          onClick={() => setTab('reports')}
+        >
+          Reports ({openReportsCount} open)
+        </button>
+      </div>
+
+      {tab === 'moderation' ? (
+        <ModerationQueue onCountChange={setModCount} />
+      ) : (
+        <ReportsQueue onCountChange={setOpenReportsCount} />
+      )}
+    </div>
+  );
+}
+
 /**
  * The moderation queue: content a picker submitted that the server's
  * automated pass quarantined or flagged pending, waiting on a human verdict.
- * Admin-only. ProtectedRoute already proves the visitor is signed in; this
- * page adds its own isAdmin check on top (rendering "Not authorized" rather
- * than redirecting, since bouncing a signed-in admin-page visitor elsewhere
- * reads as a bug) — the server enforces the real boundary regardless.
  */
-export function AdminModeration() {
-  const { token, isAdmin } = useAuth();
+function ModerationQueue({ onCountChange }: { onCountChange: (n: number) => void }) {
+  const { token } = useAuth();
   const [entries, setEntries] = useState<ModerationEntry[]>([]);
   const [counts, setCounts] = useState({ pending: 0, quarantined: 0 });
   const [loading, setLoading] = useState(true);
@@ -70,6 +143,10 @@ export function AdminModeration() {
   // The account whose owner a jettison is being considered for; null closes
   // the dialog. Held here rather than per-row so only one can ever be open.
   const [jettisonAccountId, setJettisonAccountId] = useState<string | null>(null);
+
+  useEffect(() => {
+    onCountChange(counts.pending + counts.quarantined);
+  }, [counts, onCountChange]);
 
   const load = useCallback(
     (silent = false) => {
@@ -94,11 +171,10 @@ export function AdminModeration() {
   );
 
   useEffect(() => {
-    if (!isAdmin) return;
     load();
     // Only the initial mount needs this; the Refresh button drives the rest.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdmin]);
+  }, []);
 
   async function handleVerdict(entry: ModerationEntry, verdict: ModerationVerdict) {
     if (!token) return;
@@ -125,15 +201,6 @@ export function AdminModeration() {
       return;
     }
     setActing((prev) => ({ ...prev, [key]: false }));
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="section">
-        <h2>Not authorized</h2>
-        <p>This page is for PickerPal admins only.</p>
-      </div>
-    );
   }
 
   return (
@@ -268,6 +335,208 @@ function ModEntry({
               Jettison user…
             </button>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The reports queue: content the automated pass approved, but a picker
+ * flagged by hand (stolen listing, spam, etc). Reviewed manually — no
+ * auto-hide — so this is the only path from a report to the item actually
+ * coming down.
+ */
+function ReportsQueue({ onCountChange }: { onCountChange: (n: number) => void }) {
+  const { token } = useAuth();
+  const [reports, setReports] = useState<ReportEntry[]>([]);
+  const [openCount, setOpenCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [entryErrors, setEntryErrors] = useState<Record<string, string>>({});
+  const [acting, setActing] = useState<Record<string, boolean>>({});
+  const [jettisonAccountId, setJettisonAccountId] = useState<string | null>(null);
+
+  useEffect(() => {
+    onCountChange(openCount);
+  }, [openCount, onCountChange]);
+
+  const load = useCallback(
+    (silent = false) => {
+      if (!token) return;
+      if (silent) setRefreshing(true);
+      else setLoading(true);
+      setError(null);
+      fetchReportsQueue(token)
+        .then((res) => {
+          setReports(res.reports);
+          setOpenCount(res.openCount);
+        })
+        .catch((err) => {
+          setError(err instanceof ApiError ? err.message : 'Failed to load the reports queue.');
+        })
+        .finally(() => {
+          setLoading(false);
+          setRefreshing(false);
+        });
+    },
+    [token],
+  );
+
+  useEffect(() => {
+    load();
+    // Only the initial mount needs this; the Refresh button drives the rest.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleResolve(report: ReportEntry, action: ReportResolution) {
+    if (!token) return;
+    setActing((prev) => ({ ...prev, [report.id]: true }));
+    setEntryErrors((prev) => {
+      const next = { ...prev };
+      delete next[report.id];
+      return next;
+    });
+    try {
+      await resolveReport(token, report.id, action);
+      setReports((prev) => prev.filter((r) => r.id !== report.id));
+      setOpenCount((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      setEntryErrors((prev) => ({
+        ...prev,
+        [report.id]: err instanceof ApiError ? err.message : 'Failed to resolve the report.',
+      }));
+      setActing((prev) => ({ ...prev, [report.id]: false }));
+      return;
+    }
+    setActing((prev) => ({ ...prev, [report.id]: false }));
+  }
+
+  return (
+    <div>
+      <div className="mod-header">
+        <h1>Reports</h1>
+        <div className="mod-header-actions">
+          {!loading && <span className="mod-counts">{openCount} open</span>}
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => load(true)}
+            disabled={loading || refreshing}
+          >
+            {refreshing ? 'Refreshing…' : 'Refresh'}
+          </button>
+        </div>
+      </div>
+
+      <p className="mod-blurb">
+        Pickers flagged these by hand — the automated pass already approved them. Removing an item settles every
+        open report against it; if what you find is truly bad, use <strong>Jettison user…</strong> instead.
+      </p>
+
+      {error && <p className="error-banner">{error}</p>}
+
+      {loading ? (
+        <p className="loading-state">Loading…</p>
+      ) : reports.length === 0 ? (
+        <div className="empty-state">
+          <span className="empty-glyph" aria-hidden="true">
+            ✅
+          </span>
+          <p className="empty-title">Nothing waiting.</p>
+        </div>
+      ) : (
+        <div className="mod-list">
+          {reports.map((report) => (
+            <ReportRow
+              key={report.id}
+              report={report}
+              busy={!!acting[report.id]}
+              error={entryErrors[report.id]}
+              onDismiss={() => handleResolve(report, 'dismiss')}
+              onRemoveItem={() => handleResolve(report, 'remove_item')}
+              onJettison={() => setJettisonAccountId(report.publisherAccountId)}
+            />
+          ))}
+        </div>
+      )}
+
+      {jettisonAccountId && (
+        <JettisonDialog
+          accountId={jettisonAccountId}
+          onClose={() => {
+            setJettisonAccountId(null);
+            // A scrub deletes rows the queue is still showing, so reload
+            // rather than leave entries pointing at content that is gone.
+            load(true);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function ReportRow({
+  report,
+  busy,
+  error,
+  onDismiss,
+  onRemoveItem,
+  onJettison,
+}: {
+  report: ReportEntry;
+  busy: boolean;
+  error?: string;
+  onDismiss: () => void;
+  onRemoveItem: () => void;
+  onJettison: () => void;
+}) {
+  const alreadyRemoved = report.itemModerationStatus === 'rejected';
+  return (
+    <div className="mod-entry">
+      {report.photoId ? (
+        <div className="mod-entry-thumb">
+          <AuthImage
+            photoId={report.photoId}
+            basePath="/v1/admin/moderation/photos"
+            variant="thumb"
+            alt=""
+            fallback={
+              <span className="placeholder" aria-hidden="true">
+                🖼️
+              </span>
+            }
+          />
+        </div>
+      ) : (
+        <div className="mod-entry-snippet">{report.snippet || '—'}</div>
+      )}
+      <div className="mod-entry-body">
+        <div className="mod-entry-top">
+          <span className="mod-entry-kind">{REASON_LABELS[report.reason]}</span>
+          {alreadyRemoved && <span className="status-chip status-chip--removed">Removed already</span>}
+          <span className="mod-entry-date">{formatDateTime(report.createdAt)}</span>
+        </div>
+        {report.note && <p className="mod-entry-reason">{report.note}</p>}
+        <p className="mod-entry-reporter">Reported by {shortId(report.reporterAccountId)}</p>
+        {error && <p className="mod-entry-error">{error}</p>}
+        <div className="mod-entry-actions">
+          <button type="button" className="btn btn-secondary" disabled={busy} onClick={onDismiss}>
+            Dismiss
+          </button>
+          <button
+            type="button"
+            className="btn btn-danger"
+            disabled={busy || alreadyRemoved}
+            title={alreadyRemoved ? 'This item has already been removed.' : undefined}
+            onClick={onRemoveItem}
+          >
+            Remove item
+          </button>
+          <button type="button" className="btn btn-link-danger" disabled={busy} onClick={onJettison}>
+            Jettison user…
+          </button>
         </div>
       </div>
     </div>
