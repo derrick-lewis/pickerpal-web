@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router-dom';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 import { NavBar } from './components/NavBar';
+import { AdminModeration } from './pages/AdminModeration';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { Home } from './pages/Home';
 import { ItemDetail } from './pages/ItemDetail';
@@ -54,6 +55,14 @@ export function App() {
             element={
               <ProtectedRoute requireTier="plus">
                 <BrowseItem />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminModeration />
               </ProtectedRoute>
             }
           />

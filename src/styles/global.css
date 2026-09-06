@@ -234,6 +234,19 @@ h1, h2, h3 {
   outline-offset: 1px;
 }
 
+.checkbox-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.checkbox-field input {
+  margin-top: 0.2rem;
+}
+
 .form-footer {
   font-size: 0.9rem;
   color: var(--color-muted);
@@ -965,6 +978,282 @@ h1, h2, h3 {
   color: var(--color-muted);
   padding: 2rem 0;
   text-align: center;
+}
+
+/* Admin moderation */
+
+.mod-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.mod-header h1 {
+  margin: 0;
+}
+
+.mod-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.mod-counts {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.mod-blurb {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  max-width: 42rem;
+  margin: 0 0 1.5rem;
+}
+
+.mod-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.mod-entry {
+  display: flex;
+  gap: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 0.9rem 1rem;
+  background: var(--color-bg);
+  box-shadow: var(--shadow-card);
+}
+
+.mod-entry-thumb {
+  flex: none;
+  width: 84px;
+  height: 84px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--color-thumb-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mod-entry-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mod-entry-thumb .placeholder {
+  font-size: 1.5rem;
+  opacity: 0.45;
+}
+
+.mod-entry-snippet {
+  flex: none;
+  width: 84px;
+  min-height: 84px;
+  border-radius: 10px;
+  background: var(--color-card-bg);
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  padding: 0.45rem;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+}
+
+.mod-entry-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.mod-entry-top {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.mod-entry-kind {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.mod-entry-date {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+
+.mod-entry-reason {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.mod-entry-error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: 0.85rem;
+}
+
+.mod-entry-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.3rem;
+}
+
+.status-chip--quarantined {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.status-chip--pending {
+  background: var(--color-card-bg);
+  color: var(--color-muted);
+  border: 1px solid var(--color-border);
+}
+
+.btn-danger {
+  background: transparent;
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+/* A text-weight destructive action: "Jettison user…" opens a dialog rather
+   than doing anything, so it must not compete with Reject for the eye. */
+.btn-link-danger {
+  background: none;
+  border: none;
+  padding: 0.45rem 0.2rem;
+  color: var(--color-danger);
+  font-size: 0.85rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.btn-link-danger:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* --- Jettison dialog (the seal-then-scrub flow) --- */
+
+.jettison-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.jettison-dialog {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 1.25rem 1.4rem 1.4rem;
+  width: min(36rem, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.jettison-dialog h2 {
+  margin: 0 0 0.75rem;
+}
+
+.jettison-note {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+  margin: 0 0 1rem;
+}
+
+.jettison-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.jettison-users {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.jettison-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.9rem;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.jettison-facts dt {
+  color: var(--color-muted);
+}
+
+.jettison-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.jettison-warning {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  font-size: 0.85rem;
+}
+
+.jettison-sealed {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.jettison-label {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+.jettison-reason,
+.jettison-confirm {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-bg);
+  color: inherit;
+  font: inherit;
+}
+
+.jettison-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
 }
 
 /* Every animated affordance stills itself for reduced-motion users. */

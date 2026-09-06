@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 
 export function NavBar() {
-  const { token, user, tier, signOut } = useAuth();
+  const { token, user, tier, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
 
   function handleSignOut() {
@@ -25,6 +25,11 @@ export function NavBar() {
           {token && (
             <Link to="/browse" className="nav-link">
               Finds
+            </Link>
+          )}
+          {token && isAdmin && (
+            <Link to="/admin" className="nav-link">
+              Admin
             </Link>
           )}
           {token && user && (

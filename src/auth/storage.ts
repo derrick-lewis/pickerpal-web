@@ -7,6 +7,9 @@ export interface StoredAuth {
   user: AuthUser;
   accountId: string;
   tier: ServerTier;
+  /** See MeResponse.isAdmin. Defaults to false for a session stored before
+   * this field existed, or one whose response never carried it. */
+  isAdmin?: boolean;
 }
 
 export function loadStoredAuth(): StoredAuth | null {
@@ -19,7 +22,11 @@ export function loadStoredAuth(): StoredAuth | null {
       // free rung until GET /v1/auth/me says otherwise. Guessing low only
       // ever hides a Plus feature for one request, where guessing high
       // would render a screen the API then refuses.
-      return { ...parsed, tier: parsed.tier === 'plus' ? 'plus' : 'account' } as StoredAuth;
+      return {
+        ...parsed,
+        tier: parsed.tier === 'plus' ? 'plus' : 'account',
+        isAdmin: parsed.isAdmin === true,
+      } as StoredAuth;
     }
     return null;
   } catch {

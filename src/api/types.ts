@@ -23,6 +23,9 @@ export interface MeResponse {
   user: AuthUser;
   accountId: string;
   tier: ServerTier;
+  /** True for PickerPal admins — unlocks /admin (moderation queue). Absent
+   * or false for everyone else. */
+  isAdmin?: boolean;
 }
 
 /** 'sold' was retired for 'unavailable' (api migration 000013): the picker

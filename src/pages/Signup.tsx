@@ -5,21 +5,25 @@ import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { GoogleSignInButton } from '../auth/GoogleSignInButton';
 
+const TOS_VERSION = '2026-09-05';
+
 export function Signup() {
   const { signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!agreedToTerms) return;
     setError(null);
     setSubmitting(true);
     try {
-      await signUp(email, password, displayName || undefined);
+      await signUp(email, password, displayName || undefined, TOS_VERSION);
       navigate('/items', { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
@@ -77,7 +81,21 @@ export function Signup() {
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
-        <button type="submit" className="btn btn-primary" disabled={submitting}>
+        <label className="checkbox-field">
+          <input
+            type="checkbox"
+            checked={agreedToTerms}
+            onChange={(e) => setAgreedToTerms(e.target.checked)}
+            required
+          />
+          <span>
+            I agree to the{' '}
+            <a href="/terms.html" target="_blank" rel="noopener noreferrer">
+              Terms of Service
+            </a>
+          </span>
+        </label>
+        <button type="submit" className="btn btn-primary" disabled={submitting || !agreedToTerms}>
           {submitting ? 'Creating account…' : 'Sign up'}
         </button>
       </form>

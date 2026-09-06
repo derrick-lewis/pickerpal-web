@@ -1,10 +1,18 @@
 import { apiRequest } from './client';
 import type { AuthResponse, MeResponse } from './types';
 
-export function signup(email: string, password: string, displayName?: string): Promise<AuthResponse> {
+export interface SignupRequest {
+  email: string;
+  password: string;
+  displayName?: string;
+  /** Version string of the Terms of Service the user accepted, e.g. '2026-09-05'. */
+  tosVersion?: string;
+}
+
+export function signup(req: SignupRequest): Promise<AuthResponse> {
   return apiRequest<AuthResponse>('/v1/auth/signup', {
     method: 'POST',
-    body: { email, password, displayName },
+    body: req,
   });
 }
 
