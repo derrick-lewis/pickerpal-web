@@ -4,13 +4,18 @@ import { apiRequest } from './client';
 // both sides — the viewer must subscribe (the route is behind
 // ProtectedRoute requireTier="plus"), and the server serves only items
 // whose publisher's subscription is live. Notes and booth positions never
-// appear in these shapes; sellerCode rides only on left_behind items.
+// appear in these shapes; sellerCode rides only on up-for-grabs items.
 
-export type FeedLens = 'left_behind' | 'showing_off';
+/** Query lens, modern vocabulary (the server accepts both old and new). */
+export type FeedLens = 'up_for_grabs' | 'scored';
+
+/** The LEGACY lens vocabulary the wire's `visibility` field still carries
+    for shipped clients; display code maps it, never shows it. */
+export type LegacyLens = 'left_behind' | 'showing_off';
 
 export interface FeedEntry {
   id: string;
-  visibility: FeedLens;
+  visibility: LegacyLens;
   status: 'available' | 'unavailable';
   priceCents: number | null;
   sellerCode?: string | null;

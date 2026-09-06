@@ -158,7 +158,7 @@ export function BrowseItem() {
 
         <div className="detail-info">
           <div className="detail-eyebrow">
-            {item.visibility === 'left_behind' ? 'Left behind' : 'Bought'}
+            {item.visibility === 'left_behind' ? 'Up for grabs' : 'Scored'}
             {item.isMine ? ' · from your catalog' : ''}
           </div>
           <h1 className="detail-heading">

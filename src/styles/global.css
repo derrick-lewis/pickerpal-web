@@ -416,7 +416,48 @@ h1, h2, h3 {
   color: var(--color-accent-contrast);
 }
 
-/* Wrapping chip rows on the Finds browse page (shops / category / maker).
+/* The Finds filter bar: three native selects + a Clear link in one wrapping
+   row. Replaced the chip walls (2026-09-06), which ate the whole first
+   screen on a phone. */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+}
+
+.filter-select {
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  max-width: 100%;
+  min-width: 0;
+  flex: 1 1 8rem;
+}
+
+.filter-select--active {
+  border-color: var(--color-accent);
+  font-weight: 600;
+}
+
+.filter-clear {
+  flex: 0 0 auto;
+  font-size: 0.9rem;
+}
+
+@media (min-width: 720px) {
+  .filter-select {
+    flex: 0 1 auto;
+    min-width: 10rem;
+  }
+}
+
+/* Wrapping chip rows (legacy; the Finds page no longer renders them).
    Distinct from .filter-group, which is a closed segmented control. */
 .chip-row {
   display: flex;

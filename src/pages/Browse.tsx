@@ -33,17 +33,19 @@ function useBrowserLocation(): { lat: number; lng: number } | null {
 
 /**
  * The crowd feed: what other pickers have published, under the same two
- * lenses the app offers — "Left behind" (live leads) and "Bought" (the brag
- * wall) — filtered by shop, category, and maker. Category/maker chips are
- * collected from the loaded rows themselves; the shop strip comes from
- * /v1/feed/places near the browser's location when it grants one. The
- * route sits behind ProtectedRoute requireTier="plus".
+ * lenses the app offers — "Up for grabs" (live leads) and "Scored" (the
+ * brag wall) — narrowed by one compact bar of Shop / Category / Maker
+ * dropdowns (native selects: one row on a phone, and the platform picker
+ * beats any chip wall). Category/maker options are collected from the
+ * loaded rows themselves; shops come from /v1/feed/places near the
+ * browser's location when it grants one. The route sits behind
+ * ProtectedRoute requireTier="plus".
  */
 export function Browse() {
   const { token } = useAuth();
   const coords = useBrowserLocation();
 
-  const [lens, setLens] = useState<FeedLens>('left_behind');
+  const [lens, setLens] = useState<FeedLens>('up_for_grabs');
   const [placeId, setPlaceId] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [makerId, setMakerId] = useState<string | null>(null);
@@ -129,8 +131,8 @@ export function Browse() {
         <div className="filter-group" role="tablist" aria-label="Lens">
           {(
             [
-              { value: 'left_behind', label: 'Left behind' },
-              { value: 'showing_off', label: 'Bought' },
+              { value: 'up_for_grabs', label: 'Up for grabs' },
+              { value: 'scored', label: 'Scored' },
             ] as const
           ).map(({ value, label }) => (
             <button
@@ -147,9 +149,24 @@ export function Browse() {
         </div>
       </div>
 
-      <ChipRow label="Shops with finds" chips={placeChips} selectedId={placeId} onSelect={setPlaceId} />
-      <ChipRow label="Category" chips={categoryChips} selectedId={categoryId} onSelect={setCategoryId} />
-      <ChipRow label="Maker" chips={makerChips} selectedId={makerId} onSelect={setMakerId} />
+      <div className="filter-bar">
+        <FilterSelect label="Shop" allLabel="All shops" chips={placeChips} selectedId={placeId} onSelect={setPlaceId} />
+        <FilterSelect label="Category" allLabel="All categories" chips={categoryChips} selectedId={categoryId} onSelect={setCategoryId} />
+        <FilterSelect label="Maker" allLabel="All makers" chips={makerChips} selectedId={makerId} onSelect={setMakerId} />
+        {(placeId ?? categoryId ?? makerId) !== null && (
+          <button
+            type="button"
+            className="btn-link filter-clear"
+            onClick={() => {
+              setPlaceId(null);
+              setCategoryId(null);
+              setMakerId(null);
+            }}
+          >
+            Clear
+          </button>
+        )}
+      </div>
 
       {error && <p className="error-banner">{error}</p>}
 
@@ -165,7 +182,7 @@ export function Browse() {
             🧭
           </span>
           <p className="empty-title">
-            {lens === 'left_behind' ? 'Nothing left behind around here yet' : 'No published buys around here yet'}
+            {lens === 'up_for_grabs' ? 'Nothing up for grabs around here yet' : 'No scored finds around here yet'}
           </p>
           <p className="empty-hint">The feed grows as pickers publish their finds from the app.</p>
         </div>
@@ -230,33 +247,39 @@ function FindCard({ item }: { item: FeedEntry }) {
   );
 }
 
-/** A wrapping row of toggleable chips; hidden when there is nothing to narrow. */
-function ChipRow({
+/** One dropdown in the filter bar. Native select on purpose: it costs a
+    single row on any screen, the platform supplies the picker UI, and the
+    active value is always visible — everything the chip walls weren't.
+    Hidden when there is nothing to narrow. */
+function FilterSelect({
   label,
+  allLabel,
   chips,
   selectedId,
   onSelect,
 }: {
   label: string;
+  allLabel: string;
   chips: Chip[];
   selectedId: string | null;
   onSelect: (id: string | null) => void;
 }) {
   if (chips.length < 2 && selectedId === null) return null;
   return (
-    <div className="chip-row" aria-label={label}>
+    <select
+      className={`filter-select ${selectedId !== null ? 'filter-select--active' : ''}`}
+      aria-label={label}
+      value={selectedId ?? ''}
+      onChange={(e) => onSelect(e.target.value === '' ? null : e.target.value)}
+    >
+      <option value="">{allLabel}</option>
       {chips.map((chip) => (
-        <button
-          key={chip.id}
-          type="button"
-          className={`chip ${chip.id === selectedId ? 'chip--active' : ''}`}
-          onClick={() => onSelect(chip.id === selectedId ? null : chip.id)}
-        >
+        <option key={chip.id} value={chip.id}>
           {chip.label}
-          {chip.count !== undefined && <span className="chip-count">{chip.count}</span>}
-        </button>
+          {chip.count !== undefined ? ` (${chip.count})` : ''}
+        </option>
       ))}
-    </div>
+    </select>
   );
 }
 
