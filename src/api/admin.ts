@@ -12,7 +12,8 @@ export type ModerationKind =
   | 'store'
   | 'share'
   | 'share_photo'
-  | 'account_name';
+  | 'account_name'
+  | 'place_sale';
 
 export type ModerationStatus = 'pending' | 'approved' | 'approved_nsfw' | 'rejected' | 'unclassifiable';
 

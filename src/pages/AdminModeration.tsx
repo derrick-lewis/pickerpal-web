@@ -26,6 +26,7 @@ const KIND_LABELS: Record<ModerationEntry['kind'], string> = {
   share: 'Share',
   share_photo: 'Share photo',
   account_name: 'Picker name',
+  place_sale: 'Shop sale',
 };
 
 const REASON_LABELS: Record<ReportReason, string> = {
