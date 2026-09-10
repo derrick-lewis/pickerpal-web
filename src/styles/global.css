@@ -1463,6 +1463,146 @@ h1, h2, h3 {
   margin-top: 0.25rem;
 }
 
+/* --- Quiz tab (Second Opinions' weekly maker quiz, SO-3) --- */
+
+.quiz-candidate-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.quiz-candidate {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+  padding: 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-bg);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+
+.quiz-candidate:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.quiz-candidate--added {
+  border-color: var(--color-accent);
+}
+
+.quiz-candidate-thumb {
+  aspect-ratio: 1;
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--color-thumb-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quiz-candidate-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.quiz-candidate-thumb .placeholder {
+  font-size: 1.5rem;
+  opacity: 0.45;
+}
+
+.quiz-candidate-maker {
+  font-size: 0.85rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quiz-candidate-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.quiz-question-editor {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  flex: none;
+  width: 100%;
+}
+
+@media (min-width: 720px) {
+  .quiz-question-editor {
+    width: 220px;
+  }
+}
+
+/* The rect canvas is sized to its own displayed image (width:100%,
+   height:auto on the image inside) rather than a fixed box, so mouse
+   fractions computed against ITS bounding rect are already fractions of
+   the photo's own pixel dimensions -- no separate contain-fit math needed,
+   unlike the mobile app's read-side overlay (lib/obscureRect.ts), which
+   has to account for a container that doesn't match the photo's aspect
+   ratio. */
+.quiz-rect-canvas {
+  position: relative;
+  width: 100%;
+  cursor: crosshair;
+  user-select: none;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--color-thumb-bg);
+}
+
+.quiz-rect-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.quiz-rect-box {
+  position: absolute;
+  border: 2px solid var(--color-accent);
+  background: rgba(32, 138, 239, 0.25);
+  pointer-events: none;
+}
+
+.quiz-save-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+
+.quiz-week-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.quiz-week-input {
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.4rem 0.5rem;
+}
+
 /* Every animated affordance stills itself for reduced-motion users. */
 @media (prefers-reduced-motion: reduce) {
   .item-card,

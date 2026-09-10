@@ -231,3 +231,96 @@ export function resolveMakerReview(
     body: { action },
   });
 }
+
+// --- Second Opinions: the weekly maker quiz (/v1/admin/quiz/*, SO-3) ---
+//
+// Curation only -- pickerpal-api's internal/quiz owns the weight math this
+// feeds (identify_weights), entirely server-side and invisible here. This
+// tab just builds and publishes the multiple-choice set.
+
+export interface QuizObscureRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface QuizCandidate {
+  itemId: string;
+  makerId: string;
+  makerName: string;
+  categoryId: string | null;
+  categoryName: string | null;
+  /** Fetch via AuthImage(basePath: '/v1/admin/moderation/photos', photoId). */
+  firstPhotoId: string;
+}
+
+export function fetchQuizCandidates(token: string, categoryId?: string | null): Promise<QuizCandidate[]> {
+  const qs = categoryId ? `?categoryId=${encodeURIComponent(categoryId)}` : '';
+  return apiRequest<QuizCandidate[]>(`/v1/admin/quiz/candidates${qs}`, { token });
+}
+
+export interface QuizDistractor {
+  makerId: string;
+  makerName: string;
+}
+
+export function fetchQuizDistractors(
+  token: string,
+  makerId: string,
+  categoryId: string | null,
+): Promise<QuizDistractor[]> {
+  const params = new URLSearchParams({ makerId });
+  if (categoryId) params.set('categoryId', categoryId);
+  return apiRequest<QuizDistractor[]>(`/v1/admin/quiz/distractors?${params.toString()}`, { token });
+}
+
+export interface CreateQuizQuestionInput {
+  photoItemId: string;
+  photoId: string;
+  obscureRect: QuizObscureRect | null;
+  correctMakerId: string;
+  distractorMakerIds: string[];
+  categoryId: string | null;
+}
+
+export function createQuiz(
+  token: string,
+  weekOf: string,
+  questions: CreateQuizQuestionInput[],
+): Promise<{ id: string }> {
+  return apiRequest<{ id: string }>('/v1/admin/quiz', {
+    method: 'POST',
+    token,
+    body: { weekOf, questions },
+  });
+}
+
+export function publishQuiz(token: string, id: string): Promise<{ ok: boolean }> {
+  return apiRequest<{ ok: boolean }>(`/v1/admin/quiz/${id}/publish`, { method: 'POST', token });
+}
+
+export interface LatestQuizQuestion {
+  id: string;
+  photoItemId: string;
+  photoId: string;
+  obscureRect: QuizObscureRect | null;
+  correctMakerId: string;
+  correctMakerName: string;
+  distractorMakerIds: string[];
+  categoryId: string | null;
+  answerCount: number;
+  correctCount: number;
+}
+
+export interface LatestQuiz {
+  id: string;
+  weekOf: string;
+  published: boolean;
+  publishedAt: number | null;
+  questions: LatestQuizQuestion[];
+}
+
+export function fetchLatestQuiz(token: string): Promise<{ quiz: LatestQuiz | null }> {
+  return apiRequest<{ quiz: LatestQuiz | null }>('/v1/admin/quiz/latest', { token });
+}
