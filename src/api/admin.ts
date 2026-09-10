@@ -172,3 +172,62 @@ export function scrubJettison(
     body: { jettisonId, confirmEmail },
   });
 }
+
+// --- Second Opinions: maker reviews (/v1/admin/maker-reviews/*) ---
+//
+// The crowd's maker-attribution disputes/consensus (pickerpal-api
+// internal/identify, migration 000028): pending ratifications (a candidate
+// crossed the weighted-consensus threshold and is queued for a one-tap
+// human call) and contested items (the owner chose Keep-mine on a
+// 'proposed' item, so an admin sides with one of them). Same shell as the
+// moderation/reports queues above, two lists in one response.
+
+export interface MakerVoteBreakdown {
+  /** Null is the "not this one" bucket, not a specific alternative. */
+  makerId: string | null;
+  makerName: string | null;
+  weightedSum: number;
+  voterCount: number;
+}
+
+export interface PendingMakerReview {
+  itemId: string;
+  /** Set when the item has a lead photo; fetch via AuthImage(basePath: '/v1/admin/moderation/photos', photoId). */
+  photoId: string | null;
+  currentMakerName: string | null;
+  pendingMakerId: string;
+  pendingMakerName: string;
+  votes: MakerVoteBreakdown[];
+}
+
+export interface ContestedMakerReview {
+  itemId: string;
+  photoId: string | null;
+  ownerMakerName: string | null;
+  crowdMakerId: string;
+  crowdMakerName: string;
+  votes: MakerVoteBreakdown[];
+}
+
+export interface MakerReviewsResponse {
+  pending: PendingMakerReview[];
+  contested: ContestedMakerReview[];
+}
+
+export type MakerReviewAction = 'ratify' | 'dismiss' | 'side_owner' | 'side_crowd';
+
+export function fetchMakerReviews(token: string): Promise<MakerReviewsResponse> {
+  return apiRequest<MakerReviewsResponse>('/v1/admin/maker-reviews', { token });
+}
+
+export function resolveMakerReview(
+  token: string,
+  itemId: string,
+  action: MakerReviewAction,
+): Promise<{ ok: boolean }> {
+  return apiRequest<{ ok: boolean }>(`/v1/admin/maker-reviews/${itemId}/resolve`, {
+    method: 'POST',
+    token,
+    body: { action },
+  });
+}

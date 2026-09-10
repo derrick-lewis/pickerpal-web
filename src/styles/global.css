@@ -1309,6 +1309,30 @@ h1, h2, h3 {
   font-size: 0.8rem;
 }
 
+/* Second Opinions' maker reviews: a subheading between the pending and
+   contested lists in the same tab, and the weighted vote breakdown/arrow
+   glyph inside each row. */
+.mod-subheading {
+  font-size: 0.95rem;
+  margin: 1.4rem 0 0.6rem;
+}
+
+.mod-subheading:first-of-type {
+  margin-top: 0;
+}
+
+.maker-arrow {
+  color: var(--color-muted);
+  font-weight: 400;
+}
+
+.vote-breakdown {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+}
+
 .btn-danger {
   background: transparent;
   border-color: var(--color-danger);
