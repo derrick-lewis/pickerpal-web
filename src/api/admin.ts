@@ -324,3 +324,88 @@ export interface LatestQuiz {
 export function fetchLatestQuiz(token: string): Promise<{ quiz: LatestQuiz | null }> {
   return apiRequest<{ quiz: LatestQuiz | null }>('/v1/admin/quiz/latest', { token });
 }
+
+// --- Shops (/v1/admin/shops/*, /v1/admin/places) ---
+//
+// Shop ownership: an admin grants a PickerPal user the right to edit a
+// shop's profile (a `places` row) in the app. Search finds the place, grant
+// and revoke manage its owners, and createPlace adds a manual place for a
+// shop nobody has synced yet (provider 'manual').
+
+export interface ShopOwner {
+  userId: string;
+  email: string;
+  displayName: string | null;
+  /** Epoch ms. */
+  grantedAt: number;
+}
+
+export interface ShopSearchResult {
+  placeId: string;
+  name: string;
+  city: string | null;
+  state: string | null;
+  /** 'apple' | 'osm' | 'manual'; kept open so a new provider never breaks the type. */
+  provider: string;
+  owners: ShopOwner[];
+}
+
+export interface CreatePlaceInput {
+  name: string;
+  latitude: number;
+  longitude: number;
+  city?: string;
+  state?: string;
+}
+
+// The contract pins the per-place shape but not the envelope around a list
+// or a single place, so accept a bare value or a one-key wrapper and fill in
+// an empty owners list rather than trusting it to be present.
+function normalizeShop(raw: Partial<ShopSearchResult>): ShopSearchResult {
+  return {
+    placeId: raw.placeId ?? '',
+    name: raw.name ?? '',
+    city: raw.city ?? null,
+    state: raw.state ?? null,
+    provider: raw.provider ?? '',
+    owners: raw.owners ?? [],
+  };
+}
+
+function unwrap<T>(value: unknown, keys: string[]): T {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const obj = value as Record<string, unknown>;
+    for (const key of keys) {
+      if (obj[key] !== undefined) return obj[key] as T;
+    }
+  }
+  return value as T;
+}
+
+export async function searchShops(q: string, token: string): Promise<ShopSearchResult[]> {
+  const res = await apiRequest<unknown>(`/v1/admin/shops/search?q=${encodeURIComponent(q)}`, { token });
+  const list = unwrap<Partial<ShopSearchResult>[] | null>(res, ['shops', 'places', 'results']);
+  return (list ?? []).map(normalizeShop);
+}
+
+export async function createPlace(input: CreatePlaceInput, token: string): Promise<ShopSearchResult> {
+  const res = await apiRequest<unknown>('/v1/admin/places', { method: 'POST', token, body: input });
+  return normalizeShop(unwrap<Partial<ShopSearchResult>>(res, ['place', 'shop']));
+}
+
+/** 404 user_not_found when no PickerPal user has that email. */
+export async function grantShopOwner(placeId: string, email: string, token: string): Promise<ShopOwner> {
+  const res = await apiRequest<unknown>(`/v1/admin/shops/${encodeURIComponent(placeId)}/owners`, {
+    method: 'POST',
+    token,
+    body: { email },
+  });
+  return unwrap<ShopOwner>(res, ['owner']);
+}
+
+export function revokeShopOwner(placeId: string, userId: string, token: string): Promise<void> {
+  return apiRequest<void>(
+    `/v1/admin/shops/${encodeURIComponent(placeId)}/owners/${encodeURIComponent(userId)}`,
+    { method: 'DELETE', token },
+  );
+}

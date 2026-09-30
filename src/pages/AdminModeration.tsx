@@ -23,6 +23,7 @@ import { AuthImage } from '../components/AuthImage';
 import { JettisonDialog } from '../components/JettisonDialog';
 import { formatDateTime } from '../lib/format';
 import { AdminQuizTab } from './AdminQuizTab';
+import { AdminShopsTab } from './AdminShopsTab';
 
 const KIND_LABELS: Record<ModerationEntry['kind'], string> = {
   item_photo: 'Item photo',
@@ -77,7 +78,7 @@ function shortId(id: string): string {
   return id.split('-')[0] ?? id;
 }
 
-type Tab = 'moderation' | 'reports' | 'makers' | 'quiz';
+type Tab = 'moderation' | 'reports' | 'makers' | 'quiz' | 'shops';
 
 /**
  * Admin page, three queues: automated moderation (this repo's existing
@@ -145,6 +146,15 @@ export function AdminModeration() {
         >
           Quiz
         </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'shops'}
+          className={`admin-tab ${tab === 'shops' ? 'admin-tab--active' : ''}`}
+          onClick={() => setTab('shops')}
+        >
+          Shops
+        </button>
       </div>
 
       {tab === 'moderation' ? (
@@ -153,8 +163,10 @@ export function AdminModeration() {
         <ReportsQueue onCountChange={setOpenReportsCount} />
       ) : tab === 'makers' ? (
         <MakerReviewsQueue onCountChange={setMakerReviewCount} />
-      ) : (
+      ) : tab === 'quiz' ? (
         <AdminQuizTab />
+      ) : (
+        <AdminShopsTab />
       )}
     </div>
   );
