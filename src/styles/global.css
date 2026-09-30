@@ -1698,3 +1698,69 @@ h1, h2, h3 {
 .shop-created {
   margin-top: 1rem;
 }
+
+/* --- Shop history panel (per-shop audit log inside a Shops-tab row) --- */
+
+.shop-history {
+  margin-top: 0.4rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.shop-history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.shop-history-event {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.shop-history-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.shop-history-summary {
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.shop-history-diff {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.shop-history-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 8px;
+  background: var(--color-card-bg);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.shop-history-block--before {
+  color: var(--color-muted);
+}
+
+.shop-history-reverted {
+  margin: 0;
+  color: var(--color-badge-available-text);
+  font-size: 0.85rem;
+  font-weight: 600;
+}

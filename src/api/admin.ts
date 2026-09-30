@@ -409,3 +409,83 @@ export function revokeShopOwner(placeId: string, userId: string, token: string):
     { method: 'DELETE', token },
   );
 }
+
+// --- Shop history (/v1/admin/shops/{placeID}/history, /profile) ---
+//
+// Append-only audit log of a shop's owner-edited profile (pickerpal-api
+// place_profile_events, migration 000031). `detail` is the jsonb verbatim;
+// its keys depend on `action` (see the viewer in AdminShopsTab). An admin
+// can revert description/hours by PATCHing the old value back.
+
+export type ShopHistoryAction =
+  | 'description_set'
+  | 'hours_set'
+  | 'sale_set'
+  | 'sale_cleared'
+  | 'note_posted'
+  | 'note_deleted'
+  | 'note_pruned'
+  | 'photo_set'
+  | 'photo_cleared'
+  | 'owner_granted'
+  | 'owner_revoked';
+
+/** One day's opening hours; null means closed. Times are 24h "HH:MM". */
+export interface ShopDayHours {
+  open: string;
+  close: string;
+}
+
+export type ShopHoursDay = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
+
+export type ShopHoursJson = Partial<Record<ShopHoursDay, ShopDayHours | null>>;
+
+export interface ShopHistoryActor {
+  userId: string;
+  email: string;
+  displayName: string | null;
+}
+
+export interface ShopHistoryEvent {
+  id: number;
+  /** Kept open so a server-side new action never breaks the viewer. */
+  action: ShopHistoryAction | (string & {});
+  detail: Record<string, unknown>;
+  /** Null when the acting user has since been deleted. */
+  actor: ShopHistoryActor | null;
+  /** Epoch ms. */
+  createdAt: number;
+}
+
+export interface ShopHistoryResponse {
+  events: ShopHistoryEvent[];
+  hasMore: boolean;
+}
+
+export function fetchShopHistory(
+  placeId: string,
+  opts: { limit?: number; before?: number },
+  token: string,
+): Promise<ShopHistoryResponse> {
+  const params = new URLSearchParams();
+  if (opts.limit !== undefined) params.set('limit', String(opts.limit));
+  if (opts.before !== undefined) params.set('before', String(opts.before));
+  const qs = params.toString();
+  return apiRequest<ShopHistoryResponse>(
+    `/v1/admin/shops/${encodeURIComponent(placeId)}/history${qs ? `?${qs}` : ''}`,
+    { token },
+  );
+}
+
+/** Admin override (same validation/moderation as the owner PATCH). `hours: null` clears. */
+export function adminPatchShopProfile(
+  placeId: string,
+  patch: { description?: string; hours?: ShopHoursJson | null },
+  token: string,
+): Promise<unknown> {
+  return apiRequest<unknown>(`/v1/admin/shops/${encodeURIComponent(placeId)}/profile`, {
+    method: 'PATCH',
+    token,
+    body: patch,
+  });
+}
