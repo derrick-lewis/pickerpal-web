@@ -97,6 +97,7 @@ export function AdminModeration() {
   const [modCount, setModCount] = useState(0);
   const [openReportsCount, setOpenReportsCount] = useState(0);
   const [makerReviewCount, setMakerReviewCount] = useState(0);
+  const [shopClaimCount, setShopClaimCount] = useState(0);
 
   if (!isAdmin) {
     return (
@@ -153,7 +154,7 @@ export function AdminModeration() {
           className={`admin-tab ${tab === 'shops' ? 'admin-tab--active' : ''}`}
           onClick={() => setTab('shops')}
         >
-          Shops
+          Shops{shopClaimCount > 0 ? ` (${shopClaimCount})` : ''}
         </button>
       </div>
 
@@ -166,7 +167,7 @@ export function AdminModeration() {
       ) : tab === 'quiz' ? (
         <AdminQuizTab />
       ) : (
-        <AdminShopsTab />
+        <AdminShopsTab onCountChange={setShopClaimCount} />
       )}
     </div>
   );

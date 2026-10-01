@@ -1764,3 +1764,13 @@ h1, h2, h3 {
   font-size: 0.85rem;
   font-weight: 600;
 }
+
+/* Pending shop claims, above the search. */
+.shop-claims {
+  margin-bottom: 1.5rem;
+}
+
+.shop-claim-message {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}

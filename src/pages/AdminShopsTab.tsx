@@ -2,10 +2,14 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import {
   adminPatchShopProfile,
   createPlace,
+  fetchShopClaims,
   fetchShopHistory,
   grantShopOwner,
+  resolveShopClaim,
   revokeShopOwner,
   searchShops,
+  type ShopClaim,
+  type ShopClaimAction,
   type ShopDayHours,
   type ShopHistoryEvent,
   type ShopHoursDay,
@@ -32,7 +36,7 @@ function placeLine(shop: ShopSearchResult): string {
  * shell idiom as the other tabs (per-row busy/error state), but driven by an
  * explicit search rather than a load-on-mount queue.
  */
-export function AdminShopsTab() {
+export function AdminShopsTab({ onCountChange }: { onCountChange?: (n: number) => void } = {}) {
   const { token } = useAuth();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<ShopSearchResult[] | null>(null);
@@ -122,6 +126,8 @@ export function AdminShopsTab() {
         <h1>Shops</h1>
       </div>
 
+      <ClaimsQueue onCountChange={onCountChange} />
+
       <p className="mod-blurb">
         Give a PickerPal user the right to edit a shop&rsquo;s photo, description, hours, sale and news in the
         app. Search by shop name or city, then add the owner by the email on their PickerPal account.
@@ -168,6 +174,124 @@ export function AdminShopsTab() {
 
       <CreateShopForm />
     </div>
+  );
+}
+
+/**
+ * Pending shop claims (place_claims): users asking to own a shop. Fetched on
+ * mount and again after every resolve; renders nothing while empty. Reports
+ * its length up through onCountChange once the first load has landed (so a
+ * remount never flashes the tab count back to zero).
+ */
+function ClaimsQueue({ onCountChange }: { onCountChange?: (n: number) => void }) {
+  const { token } = useAuth();
+  const [claims, setClaims] = useState<ShopClaim[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<Record<string, boolean>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (claims) onCountChange?.(claims.length);
+  }, [claims, onCountChange]);
+
+  async function load() {
+    if (!token) return;
+    try {
+      setClaims(await fetchShopClaims(token));
+      setLoadError(null);
+    } catch (err) {
+      setLoadError(errorMessage(err, 'Failed to load pending claims.'));
+    }
+  }
+
+  useEffect(() => {
+    void load();
+    // Mount only; resolves refetch explicitly.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function setClaimError(id: string, message: string | null) {
+    setErrors((prev) => {
+      const next = { ...prev };
+      if (message) next[id] = message;
+      else delete next[id];
+      return next;
+    });
+  }
+
+  async function handleResolve(claim: ShopClaim, action: ShopClaimAction) {
+    if (!token) return;
+    if (
+      action === 'accept' &&
+      !window.confirm(`Make ${claim.user.email} the owner of ${claim.placeName}?`)
+    ) {
+      return;
+    }
+    setBusy((prev) => ({ ...prev, [claim.id]: true }));
+    setClaimError(claim.id, null);
+    try {
+      await resolveShopClaim(claim.id, action, token);
+      setClaims((prev) => prev && prev.filter((c) => c.id !== claim.id));
+      await load();
+    } catch (err) {
+      setClaimError(claim.id, errorMessage(err, `Failed to ${action} the claim.`));
+      // The queue is stale if the claim was settled elsewhere or the shop got an owner.
+      if (err instanceof ApiError && (err.code === 'claim_resolved' || err.code === 'shop_has_owner')) {
+        await load();
+      }
+    } finally {
+      setBusy((prev) => ({ ...prev, [claim.id]: false }));
+    }
+  }
+
+  if (loadError) return <p className="error-banner">{loadError}</p>;
+  if (!claims || claims.length === 0) return null;
+
+  return (
+    <section className="shop-claims">
+      <h2 className="mod-subheading">Pending claims ({claims.length})</h2>
+      <div className="mod-list">
+        {claims.map((claim) => {
+          const place = [claim.placeCity, claim.placeState].filter(Boolean).join(', ');
+          const isBusy = !!busy[claim.id];
+          return (
+            <div key={claim.id} className="mod-entry">
+              <div className="mod-entry-body">
+                <div className="mod-entry-top">
+                  <strong>{claim.placeName}</strong>
+                  {place && <span className="mod-entry-date">{place}</span>}
+                  <span className="mod-entry-date">{formatDateTime(claim.createdAt)}</span>
+                </div>
+                <p className="mod-entry-reporter">
+                  {claim.user.email}
+                  {claim.user.displayName ? ` (${claim.user.displayName})` : ''}
+                </p>
+                <p className="mod-entry-reason shop-claim-message">{`\u201c${claim.message}\u201d`}</p>
+                {errors[claim.id] && <p className="mod-entry-error">{errors[claim.id]}</p>}
+                <div className="mod-entry-actions">
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    disabled={isBusy}
+                    onClick={() => handleResolve(claim, 'accept')}
+                  >
+                    {isBusy ? 'Working…' : 'Accept'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    disabled={isBusy}
+                    onClick={() => handleResolve(claim, 'reject')}
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

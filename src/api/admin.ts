@@ -489,3 +489,50 @@ export function adminPatchShopProfile(
     body: patch,
   });
 }
+
+// --- Shop claims (/v1/admin/shops/claims) ---
+//
+// A signed-in user claims an unowned shop from the app; the claim lands here
+// as a pending queue (oldest first). Accepting grants ownership exactly like
+// grantShopOwner above (and auto-rejects other pending claims on the same
+// place); rejecting just closes the claim. 404 for an unknown claim, 409
+// `claim_resolved` if it is no longer pending, 409 `shop_has_owner` if the
+// place gained an owner in the meantime (the claim then stays pending).
+
+export interface ShopClaimUser {
+  userId: string;
+  email: string;
+  displayName: string | null;
+}
+
+export interface ShopClaim {
+  id: string;
+  placeId: string;
+  placeName: string;
+  placeCity: string | null;
+  placeState: string | null;
+  user: ShopClaimUser;
+  /** The claimer's note. */
+  message: string;
+  /** Epoch ms. */
+  createdAt: number;
+}
+
+export type ShopClaimAction = 'accept' | 'reject';
+
+export async function fetchShopClaims(token: string): Promise<ShopClaim[]> {
+  const res = await apiRequest<{ claims: ShopClaim[] | null }>('/v1/admin/shops/claims', { token });
+  return res.claims ?? [];
+}
+
+/** `owner` is present for an accept only. */
+export function resolveShopClaim(
+  claimId: string,
+  action: ShopClaimAction,
+  token: string,
+): Promise<{ ok: boolean; owner?: ShopOwner }> {
+  return apiRequest<{ ok: boolean; owner?: ShopOwner }>(
+    `/v1/admin/shops/claims/${encodeURIComponent(claimId)}/resolve`,
+    { method: 'POST', token, body: { action } },
+  );
+}
